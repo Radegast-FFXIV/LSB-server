@@ -869,6 +869,7 @@ end
 ---@param tType integer
 ---@param bit integer
 ---@param arg2 integer?
+---@return boolean
 function CBaseEntity:hasTeleport(tType, bit, arg2)
 end
 
@@ -2725,6 +2726,11 @@ end
 ---@param amount integer
 ---@return nil
 function CBaseEntity:setVE(target, amount)
+end
+
+---@param PEntity CBaseEntity
+---@return nil
+function CBaseEntity:addBaseEnmity(PEntity)
 end
 
 ---@param PEntity CBaseEntity

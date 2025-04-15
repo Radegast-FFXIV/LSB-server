@@ -12845,6 +12845,28 @@ void CLuaBaseEntity::setVE(CLuaBaseEntity* target, uint16 amount)
 }
 
 /************************************************************************
+ *  Function: addBaseEnmity()
+ *  Purpose : Adds entity to the Mob's Enmity table
+ *  Example : mob:addBaseEnmity(player)
+ *  Notes   : Unlike addEnmity, this adds the target in a passive state with 0 CE and 0 VE
+ ************************************************************************/
+
+void CLuaBaseEntity::addBaseEnmity(CLuaBaseEntity* PEntity)
+{
+    if (auto* PMob = dynamic_cast<CMobEntity*>(m_PBaseEntity))
+    {
+        if (PEntity != nullptr)
+        {
+            PMob->PEnmityContainer->AddBaseEnmity(static_cast<CBattleEntity*>(PEntity->GetBaseEntity()));
+        }
+    }
+    else
+    {
+        ShowWarning("Attempting to add base enmity to invalid entity type (%s).", m_PBaseEntity->getName());
+    }
+}
+
+/************************************************************************
  *  Function: addEnmity()
  *  Purpose : Adds CE and VE Enmity to the Mobs Enmity table against that Entity
  *  Example : target:addEnmity(automaton, 450, 900)
@@ -12882,7 +12904,7 @@ void CLuaBaseEntity::lowerEnmity(CLuaBaseEntity* PEntity, uint8 percent)
 {
     if (m_PBaseEntity->objtype != TYPE_MOB)
     {
-        ShowWarning("Attempting to lower enmnity for invalid entity type (%s).", m_PBaseEntity->getName());
+        ShowWarning("Attempting to lower enmity for invalid entity type (%s).", m_PBaseEntity->getName());
         return;
     }
 
@@ -18283,34 +18305,37 @@ uint16 CLuaBaseEntity::getStealItem()
 
 /************************************************************************
  *  Function: getDespoilItem()
- *  Purpose : Used to return the Item ID of a mob's item which can be despoiled
+ *  Purpose : Return the ID of one random despoilable item.
  *  Example : local despoilItem = target:getDespoilItem()
  *  Notes   : Defaults to getStealItem() if no despoil item exists
  ************************************************************************/
 
 uint16 CLuaBaseEntity::getDespoilItem()
 {
-    if (m_PBaseEntity->objtype != TYPE_MOB)
+    const auto* PMob = dynamic_cast<CMobEntity*>(m_PBaseEntity);
+    if (!PMob)
     {
         ShowWarning("Attempting to get despoil item for invalid entity type (%s).", m_PBaseEntity->getName());
         return 0;
     }
 
-    auto* PMob = dynamic_cast<CMobEntity*>(m_PBaseEntity);
+    DropList_t* PDropList = itemutils::GetDropList(PMob->m_DropID);
 
-    if (PMob)
+    if (PDropList && !PMob->m_ItemStolen)
     {
-        DropList_t* PDropList = itemutils::GetDropList(PMob->m_DropID);
+        std::vector<DropItem_t> despoilableItems;
 
-        if (PDropList && !PMob->m_ItemStolen)
+        for (DropItem_t const& drop : PDropList->Items)
         {
-            for (DropItem_t const& drop : PDropList->Items)
+            if (drop.DropType == DROP_DESPOIL)
             {
-                if (drop.DropType == DROP_DESPOIL)
-                {
-                    return drop.ItemID;
-                }
+                despoilableItems.emplace_back(drop);
             }
+        }
+
+        if (!despoilableItems.empty())
+        {
+            return xirand::GetRandomElement(despoilableItems).ItemID;
         }
     }
 
@@ -18769,7 +18794,7 @@ void CLuaBaseEntity::setMannequinPose(uint16 itemID, uint8 race, uint8 pose)
 
                         const char* fmtQuery = "UPDATE char_inventory "
                                                "SET extra = ? "
-                                               "WHERE charid = ? AND itemId = ?"
+                                               "WHERE charid = ? AND itemId = ? "
                                                "LIMIT 1";
 
                         if (!db::preparedStmt(fmtQuery, PMannequin->m_extra, PChar->id, PMannequin->getID()))
@@ -19508,6 +19533,7 @@ void CLuaBaseEntity::Register()
     SOL_REGISTER("getVE", CLuaBaseEntity::getVE);
     SOL_REGISTER("setCE", CLuaBaseEntity::setCE);
     SOL_REGISTER("setVE", CLuaBaseEntity::setVE);
+    SOL_REGISTER("addBaseEnmity", CLuaBaseEntity::addBaseEnmity);
     SOL_REGISTER("addEnmity", CLuaBaseEntity::addEnmity);
     SOL_REGISTER("lowerEnmity", CLuaBaseEntity::lowerEnmity);
     SOL_REGISTER("updateEnmity", CLuaBaseEntity::updateEnmity);
