@@ -5,7 +5,7 @@
 local mineshaftID = zones[xi.zone.MINE_SHAFT_2716]
 -----------------------------------
 
-local content = BattlefieldMission:new({
+local content = Battlefield:new({
     zoneId                = xi.zone.MINE_SHAFT_2716,
     battlefieldId         = xi.battlefield.id.PULLING_THE_STRINGS,
     canLoseExp            = false,
@@ -15,14 +15,14 @@ local content = BattlefieldMission:new({
     maxPlayers            = 1,
     levelCap              = 60,
     timeLimit             = utils.minutes(15),
-    index                 = 1,
+    index                 = 3,
     entryNpc              = '_0d0',
     exitNpcs              = { '_0d1', '_0d2', '_0d3' },
     requiredKeyItems      = { xi.ki.SHAFT_GATE_OPERATING_DIAL},
     grantXP               = 2000,
-
-    experimental          = true
 })
+
+content:addEssentialMobs({'Moblin_Fantocciniman', 'Fantoccini'})
 
 local jobLootTable = {
     [xi.job.BRD] = {
@@ -145,28 +145,30 @@ local jobLootTable = {
     }
 }
 
-function getLootTableFromPlayerJob(player)
-    local playerJob = player:getMainJob()
+function getLootTableFromPlayerJob(playerJob)
     return {
         {
             { item = xi.item.SACK_OF_LITTLE_WORM_MULCH,                weight = 1000 }, -- player always gets worm mulch
         },
-        table.unpack(jobLootTable[playerJob])
+        unpack(jobLootTable[playerJob])
     }
 end
 
 function content:entryRequirement(player, npc, isRegistrant, trade)
     local playerHasDial = player:hasKeyItem(xi.ki.SHAFT_GATE_OPERATING_DIAL)
-    local playerIsNotWingsOrAdoulinJob = not (
-        player:getMainJob() == xi.job.DNC or
-        player:getMainJob() == xi.job.SCH or
-        player:getMainJob() == xi.job.GEO or
-        player:getMainJob() == xi.job.RUN
-    )
+    local playerJob = player:getMainJob()
 
+
+    local playerIsNotWingsOrAdoulinJob = not (
+        playerJob == xi.job.DNC or
+        playerJob == xi.job.SCH or
+        playerJob == xi.job.GEO or
+        playerJob == xi.job.RUN
+    )
     local playerIsQualified = playerHasDial and playerIsNotWingsOrAdoulinJob
+
     if playerIsQualified then
-        content.loot = getLootTableFromPlayerJob(player)
+        content.loot = getLootTableFromPlayerJob(playerJob)
     end
 
     return playerIsQualified
