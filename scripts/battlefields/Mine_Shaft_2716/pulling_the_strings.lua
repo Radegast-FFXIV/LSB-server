@@ -1,15 +1,16 @@
 -----------------------------------
 -- Pulling the Strings
--- Mine Shaft #2716 mission battlefield
+-- Mine Shaft #2716 ENM, Shaft Gate Operating Dial
+-- !addkeyitem SHAFT_GATE_OPERATING_DIAL
+-- !pos -60.9781 -120.0084 -579.8447 13
 -----------------------------------
-local mineshaftID = zones[xi.zone.MINE_SHAFT_2716]
+local ID = zones[xi.zone.MINE_SHAFT_2716]
 -----------------------------------
 
 local content = Battlefield:new({
     zoneId                = xi.zone.MINE_SHAFT_2716,
     battlefieldId         = xi.battlefield.id.PULLING_THE_STRINGS,
     canLoseExp            = false,
-    isMission             = false,
     allowTrusts           = false,
     allowSubjob           = false,
     maxPlayers            = 1,
@@ -18,11 +19,9 @@ local content = Battlefield:new({
     index                 = 3,
     entryNpc              = '_0d0',
     exitNpcs              = { '_0d1', '_0d2', '_0d3' },
-    requiredKeyItems      = { xi.ki.SHAFT_GATE_OPERATING_DIAL},
+    requiredKeyItems      = { xi.ki.SHAFT_GATE_OPERATING_DIAL, message = ID.text.NO_BATTLEFIELD_ENTRY},
     grantXP               = 2000,
 })
-
-content:addEssentialMobs({'Moblin_Fantocciniman', 'Fantoccini'})
 
 local jobLootTable = {
     [xi.job.BRD] = {
@@ -146,18 +145,18 @@ local jobLootTable = {
 }
 
 function getLootTableFromPlayerJob(playerJob)
-    return {
+    local lootTable = {
         {
             { item = xi.item.SACK_OF_LITTLE_WORM_MULCH,                weight = 1000 }, -- player always gets worm mulch
         },
-        unpack(jobLootTable[playerJob])
+        unpack(jobLootTable[playerJob], 0, #jobLootTable[playerJob])
     }
+    -- print(string.format("Prospective loot table: %s", tostring(lootTable)))
+    return lootTable
 end
 
 function content:entryRequirement(player, npc, isRegistrant, trade)
-    local playerHasDial = player:hasKeyItem(xi.ki.SHAFT_GATE_OPERATING_DIAL)
     local playerJob = player:getMainJob()
-
 
     local playerIsNotWingsOrAdoulinJob = not (
         playerJob == xi.job.DNC or
@@ -165,46 +164,27 @@ function content:entryRequirement(player, npc, isRegistrant, trade)
         playerJob == xi.job.GEO or
         playerJob == xi.job.RUN
     )
-    local playerIsQualified = playerHasDial and playerIsNotWingsOrAdoulinJob
 
-    if playerIsQualified then
-        content.loot = getLootTableFromPlayerJob(playerJob)
-    end
+    return playerIsNotWingsOrAdoulinJob
+end
 
-    return playerIsQualified
+function content:battlefieldEntry(player, battlefield)
+    content.loot = getLootTableFromPlayerJob(player:getMainJob())
 end
 
 content.groups = {
     {
-        mobIds  = {
-            { mineshaftID.mob.FANTOCCINI },
-            { mineshaftID.mob.MOBLIN_FANTOCCINIMAN }
-        },
-        death = function(battlefield, mob, count)
-            -- If the Fantocciniman dies, all mobs get permanently
-            -- terrorized.
-            if mob.ID == mineshaftID.mob.MOBLIN_FANTOCCINIMAN then
-                local battlefieldMobs = battlefield:getMobs(true, true)
-                for _, mobObj in ipairs(battlefieldMobs) do
-                    mobObj:addStatusEffect(xi.effect.TERROR, 0, 0 , 900)
-                end
-            end
-
-            -- If the Fantoccini dies, despawn the Moblin
-            -- Fantocciniman.
-            if mob.ID == mineshaftID.mob.FANTOCCINI then
-                local moblin = GetMobByID(mineshaftID.mob.MOBLIN_FANTOCCINIMAN)
-                if moblin then
-                    moblin:showText(moblin, mineshaftID.text.NOT_HOW)
-                    DespawnMob(mob:getLocalVar("petID"))
-                    DespawnMob(moblin:getID())
-                end
-            end
-        end,
-        allDeath = function(battlefield, mob)
-            battlefield:setStatus(xi.battlefield.status.WON)
-        end,
+        mobs = { 'Fantoccini' },
+        setup = function(battlefield, mobs)
+            print(string.format("Number of players: %i",battlefield:getPlayerCount()))
+            print(string.format("Player Job: %s", tostring(battlefield:getPlayers())))
+        end
+    },
+    {
+        mobs = {'Moblin_Fantocciniman'},
     }
 }
+
+content:addEssentialMobs({ 'Fantoccini', 'Moblin_Fantocciniman' })
 
 return content:register()
