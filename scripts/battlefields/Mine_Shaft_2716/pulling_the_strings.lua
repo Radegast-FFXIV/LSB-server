@@ -144,6 +144,13 @@ local jobLootTable = {
     }
 }
 
+function content:onEntryEventUpdate(player, csid, option, npc)
+    if Battlefield.onEntryEventUpdate(self, player, csid, option, npc) then
+        local playerJob player:getMainJob()
+
+    end
+end
+
 function getLootTableFromPlayerJob(playerJob)
     local lootTable = {
         {
@@ -174,17 +181,14 @@ end
 
 content.groups = {
     {
-        mobs = { 'Fantoccini' },
-        setup = function(battlefield, mobs)
-            print(string.format("Number of players: %i",battlefield:getPlayerCount()))
-            print(string.format("Player Job: %s", tostring(battlefield:getPlayers())))
-        end
+        mobs = { 'Fantoccini' }
     },
     {
-        mobs = {'Moblin_Fantocciniman'},
+        mobs = {'Moblin_Fantocciniman'}
     }
 }
 
 content:addEssentialMobs({ 'Fantoccini', 'Moblin_Fantocciniman' })
+
 
 return content:register()
